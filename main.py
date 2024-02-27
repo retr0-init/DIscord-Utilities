@@ -43,7 +43,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
     Check the permission to run the privileged command
     The ROLE_ID needs to be set with the elevate command
     '''
-    async def my_check(self, ctx: interactions.BaseContext):
+    async def my_check(ctx: interactions.BaseContext):
         res: bool = await interactions.is_owner()(ctx)
         r: bool = any(map(ctx.author.has_role, self.elevation_roles)) if len(self.elevation_roles) > 0 else False
         u: bool = any(map(ctx.author.id.__eq__, self.elevation_members)) if len(self.elevation_members) > 0 else False
@@ -83,7 +83,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         await ctx.send("All privilege elevations have been removed!")
 
     @module_group.subcommand("members_older_than", sub_cmd_description="(Privileged) Get the list of members whose join date is longer than...")
-    @interactions.check(self.my_check)
+    @interactions.check(my_check)
     @interactions.slash_option(
         name = "weeks",
         description = "Joined longer than...",
