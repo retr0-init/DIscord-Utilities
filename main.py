@@ -32,7 +32,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         name="utility",
         description="Useful utilities for Discord guilds"
     )
-    module_group: interactions.SlashCommand = self.module_base.group(
+    module_group: interactions.SlashCommand = module_base.group(
         name="guild",
         description="Guild related utilities"
     )
