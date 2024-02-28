@@ -107,12 +107,12 @@ class Retr0initDiscordUtilities(interactions.Extension):
         td: datetime.timedelta = datetime.timedelta(days=days, weeks=weeks, hours=hours)
         channel: interactions.TYPE_GUILD_CHANNEL = ctx.channel
         valid_members: list[interactions.Member] = [mem for mem in ctx.guild.members if now - mem.joined_at >= td and not mem.bot]
-        valid_members_str: list[str] = [f"- {mem.display_name}({mem.username})" for mem in valid_members]
+        valid_members_str: list[str] = [f"- {mem.display_name}({mem.username}) ({now.__sub__(mem.joined_at).days} days)" for mem in valid_members]
         pag: Paginator = Paginator.create_from_string(self.bot, '\n'.join(valid_members_str), prefix=f"### Members joined more than {weeks}w{days}d{hours}h")
         await pag.send(ctx)
         async with aiofiles.tempfile.NamedTemporaryFile(prefix=f"users_{weeks}w_{days}d_{hours}h-", suffix=".txt", delete=False) as afp:
             write_str: str = '\n'.join([str(mem.id) for mem in valid_members])
-            await afp.write(write_str)
+            await afp.write(str.encode(write_str))
             filename: str = afp.name
             await afp.close()
             await channel.send(f"All members joined more than {weeks}w{days}d{hours}h", file=filename)
