@@ -44,7 +44,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
     '''
     async def my_check(ctx: interactions.BaseContext):
         res: bool = await interactions.is_owner()(ctx)
-        r: bool = any(map(ctx.author.has_role, elevation_roles)) if len(self.elevation_roles) > 0 else False
+        r: bool = any(map(ctx.author.has_role, elevation_roles)) if len(elevation_roles) > 0 else False
         u: bool = any(map(ctx.author.id.__eq__, elevation_members)) if len(elevation_members) > 0 else False
         return res or r or u
 
