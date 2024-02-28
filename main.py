@@ -127,7 +127,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         pag: Paginator = Paginator.create_from_string(self.bot, '\n'.join(valid_members_str), prefix=f"### Members joined more than {weeks}w{days}d{hours}h")
         await pag.send(ctx)
         async with aiofiles.tempfile.NamedTemporaryFile(prefix=f"users_{weeks}w_{days}d_{hours}h-", suffix=".txt", delete=False) as afp:
-            write_str: str = '\n'.join([str(mem.id) for mem in valid_members])
+            write_str: str = str([str(mem.id) for mem in valid_members])
             await afp.write(str.encode(write_str))
             filename: str = afp.name
             await afp.close()
