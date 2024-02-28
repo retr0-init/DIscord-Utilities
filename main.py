@@ -49,6 +49,21 @@ class Retr0initDiscordUtilities(interactions.Extension):
         u: bool = any(map(ctx.author.id.__eq__, elevation_members)) if len(elevation_members) > 0 else False
         return res or r or u
 
+    @module_base.subcommand("elevate_show", sub_cmd_description="Show Elevation settings")
+    async def cmd_elevateShow(self, ctx: interactions.SlashContext):
+        await ctx.defer()
+        display_str: str = "There is no current elevation setting." if len(elevation_roles) == 0 or len(elevation_members) == 0 else ""
+        if len(elevation_roles) > 0:
+            display_str += "### Elevated Roles\n"
+            for r in elevation_roles:
+                display_str += f"- {ctx.guild.get_role(r).name}\n"
+        if len(elevation_members) > 0:
+            display_str += "### Elevated Members\n"
+            for u in elevation_members:
+                display_str += f"- {ctx.guild.get_member(u)}\n"
+        pag: Paginator = Paginator.create_from_string(self.bot, display_str)
+        await pag.send(ctx)
+
     @module_base.subcommand("elevate_role", sub_cmd_description="Elevate certain role to run privileged commands")
     @interactions.check(interactions.is_owner())
     @interactions.slash_option(
