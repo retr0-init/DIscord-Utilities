@@ -23,7 +23,8 @@ import datetime
 import aiofiles
 # Use the following method to import the internal module in the current same directory
 # from . import internal_t
-
+elevation_roles: list[int] = []
+elevation_members: list[int] = []
 '''
 Useful utilities
 '''
@@ -36,8 +37,6 @@ class Retr0initDiscordUtilities(interactions.Extension):
         name="guild",
         description="Guild related utilities"
     )
-    elevation_roles: list[int] = []
-    elevation_members: list[int] = []
 
     '''
     Check the permission to run the privileged command
@@ -45,8 +44,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
     '''
     async def my_check(self, ctx: interactions.BaseContext):
         res: bool = await interactions.is_owner()(ctx)
-        r: bool = any(map(ctx.author.has_role, self.elevation_roles)) if len(self.elevation_roles) > 0 else False
-        u: bool = any(map(ctx.author.id.__eq__, self.elevation_members)) if len(self.elevation_members) > 0 else False
+        r: bool = any(map(ctx.author.has_role, elevation_roles)) if len(self.elevation_roles) > 0 else False
+        u: bool = any(map(ctx.author.id.__eq__, elevation_members)) if len(elevation_members) > 0 else False
         return res or r or u
 
     @module_base.subcommand("elevate_role", sub_cmd_description="Elevate certain role to run privileged commands")
@@ -58,8 +57,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
         opt_type = interactions.OptionType.ROLE
     )
     async def cmd_elevateRole(self, ctx: interactions.SlashContext, role: interactions.Role):
-        if role.id not in self.elevation_roles:
-            self.elevation_roles.append(role.id)
+        if role.id not in elevation_roles:
+            elevation_roles.append(role.id)
         await ctx.send(f"Role {role.name} has been elevated for all utility commands!")
 
     @module_base.subcommand("elevate_member", sub_cmd_description="Elevate certain member to run privileged commands")
@@ -71,15 +70,15 @@ class Retr0initDiscordUtilities(interactions.Extension):
         opt_type = interactions.OptionType.USER
     )
     async def cmd_elevateMember(self, ctx: interactions.SlashContext, member: interactions.User):
-        if member.id not in self.elevation_members:
-            self.elevation_members.append(member.id)
+        if member.id not in elevation_members:
+            elevation_members.append(member.id)
         await ctx.send(f"Member {member.display_name}({member.username}) has been elevated for all utility commands!")
     
     @module_base.subcommand("elevate_clear", sub_cmd_description="Clear all privilege elevations")
     @interactions.check(interactions.is_owner())
     async def cmd_elevateClear(self, ctx: interactions.SlashContext):
-        self.elevation_members.clear()
-        self.elevation_roles.clear()
+        elevation_members.clear()
+        elevation_roles.clear()
         await ctx.send("All privilege elevations have been removed!")
 
     @module_group.subcommand("members_older_than", sub_cmd_description="(Privileged) Get the list of members whose join date is longer than...")
