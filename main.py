@@ -52,7 +52,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
     @module_base.subcommand("elevate_show", sub_cmd_description="Show Elevation settings")
     async def cmd_elevateShow(self, ctx: interactions.SlashContext):
         await ctx.defer()
-        display_str: str = "There is no current elevation setting." if len(elevation_roles) == 0 or len(elevation_members) == 0 else ""
+        display_str: str = "There is no current elevation setting." if len(elevation_roles) == 0 and len(elevation_members) == 0 else ""
         if len(elevation_roles) > 0:
             display_str += "### Elevated Roles\n"
             for r in elevation_roles:
