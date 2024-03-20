@@ -38,6 +38,10 @@ class Retr0initDiscordUtilities(interactions.Extension):
         name="guild",
         description="Guild related utilities"
     )
+    module_group_c: interactions.SlashCommand = module_base.group(
+        name="channel",
+        description="Channel related utilities"
+    )
 
     '''
     Check the permission to run the privileged command
@@ -133,3 +137,31 @@ class Retr0initDiscordUtilities(interactions.Extension):
             await afp.close()
             await channel.send(f"All members joined more than {weeks}w{days}d{hours}h", file=filename)
             await aiofiles.os.remove(filename)
+
+    @module_group_c.subcommand("rate_limit", sub_cmd_description="(Privileged) Rate limit a channel")
+    @interactions.check(my_check)
+    @interactions.slash_option(
+        name = "channel",
+        description = "The channel to set the rate limit",
+        required = True,
+        opt_type = interactions.OptionType.CHANNEL
+    )
+    @interactions.slash_option(
+        name = "rate",
+        description = "How many seconds before user can send another message",
+        required = True,
+        opt_type = interactions.OptionType.INTEGER
+    )
+    async def cmd_channel_rate_limit(self, ctx: interactions.SlashContext, channel: interactions.TYPE_GUILD_CHANNEL, rate: int) -> None:
+        await ctx.defer()
+        rate = 0 if rate <= 0 else rate
+        if isinstance(channel, interactions.GuildForum) or hasattr(channel, "default_forum_layout"):
+            channel.rate_limit_per_user = rate
+            active_posts: list[interactions.GuildForumPost] = await channel.fetch_posts()
+            for post in active_posts:
+                await post.edit(rate_limit_per_user=rate)
+            async for post in channel.archived_posts():
+                await post.edit(rate_limit_per_user=rate)
+            await ctx.send(f"Everyone in {channel.name} can send message every {rate} seconds!")
+            return
+        await ctx.send("This channel type is not implemented!")

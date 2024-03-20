@@ -4,3 +4,6 @@
 - Bug fixes
 - Added joined days
 - Added Show elevated settings
+
+# 20240320
+- Added Command to set the channel rate limit
