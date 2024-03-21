@@ -153,13 +153,14 @@ class Retr0initDiscordUtilities(interactions.Extension):
         opt_type = interactions.OptionType.INTEGER
     )
     async def cmd_channel_rate_limit(self, ctx: interactions.SlashContext, channel: interactions.TYPE_GUILD_CHANNEL, rate: int) -> None:
-        await ctx.defer()
+        await ctx.send(f"Setting the rate limit of {rate} to {channel.name}...")
         rate = 0 if rate <= 0 else rate
         if isinstance(channel, interactions.GuildForum) or hasattr(channel, "default_forum_layout"):
+            ctx_ch: interactions.MessageableMixin = ctx.channel
             channel.rate_limit_per_user = rate
             active_posts: list[interactions.GuildForumPost] = await channel.fetch_posts()
             for post in active_posts:
                 await post.edit(rate_limit_per_user=rate)
-            await ctx.send(f"Everyone in {channel.name} can send message every {rate} seconds!")
+            await ctx_ch.send(f"Everyone in {channel.name} can send message every {rate} seconds!")
             return
         await ctx.send("This channel type is not implemented!")
