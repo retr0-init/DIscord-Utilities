@@ -160,8 +160,6 @@ class Retr0initDiscordUtilities(interactions.Extension):
             active_posts: list[interactions.GuildForumPost] = await channel.fetch_posts()
             for post in active_posts:
                 await post.edit(rate_limit_per_user=rate)
-            async for post in channel.archived_posts():
-                await post.edit(rate_limit_per_user=rate)
             await ctx.send(f"Everyone in {channel.name} can send message every {rate} seconds!")
             return
         await ctx.send("This channel type is not implemented!")
