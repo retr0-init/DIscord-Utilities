@@ -22,6 +22,7 @@ from interactions.ext.paginators import Paginator
 import datetime
 import aiofiles
 import aiofiles.os
+from typing import Optional
 # Use the following method to import the internal module in the current same directory
 # from . import internal_t
 elevation_roles: list[int] = []
