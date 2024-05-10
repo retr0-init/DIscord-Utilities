@@ -164,3 +164,29 @@ class Retr0initDiscordUtilities(interactions.Extension):
             await ctx_ch.send(f"Everyone in {channel.mention} can send message every `{rate}` seconds!")
             return
         await ctx_ch.send("This channel type is not implemented!")
+
+    @module_group_c.subcommand("archive", sub_cmd_description="(Privileged) Archive a forum post")
+    @interactions.check(my_check)
+    @interactions.slash_option(
+        name = "locked",
+        description = "Whether to lock the post as well",
+        required=False,
+        opt_type=interactions.OptionType.INTEGER,
+        choices=[
+            interactions.SlashCommandChoice(name="true", value=1),
+            interactions.SlashCommandChoice(name="false", value=0)
+        ]
+    )
+    @interactions.slash_option(
+        name = "reason",
+        description = "The reason to archive this post",
+        required = False,
+        opt_type = interactions.OptionType.STRING
+    )
+    async def cmd_channel_archive(self, ctx: interactions.SlashContext, locked: Optional[int] = 0, reason: Optional[str] = "Reason not given") -> None:
+        channel: interactions.GuildChannel = ctx.channel
+        if not isinstance(channel, interactions.ThreadChannel):
+            await ctx.send("This is not a thread!")
+            return
+        await channel.archive(locked=(locked == 1), reason=reason)
+        await ctx.send("This forum post is archived!")
