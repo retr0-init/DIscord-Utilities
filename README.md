@@ -13,3 +13,4 @@ The default setting is that only the bot owner can run all commands including th
 
 ## Channel
 - `/utility channel rate_limit` set the rate limit per user of a channel. **_This Command is Privileged._**
+- `/utility channel archive` archives a post or thread. It can also lock and give a reason with optional parameters. **_This Command is Privileged._**
