@@ -191,3 +191,57 @@ class Retr0initDiscordUtilities(interactions.Extension):
             return
         await channel.archive(locked=(locked == 1), reason=reason)
         await ctx.send("This forum post is archived!")
+
+    @module_group_c.subcommand(
+        "delete_user_messages", sub_cmd_description="Delete all messages from a specific user in a channel"
+    )
+    @interactions.check(my_check)
+    @interactions.slash_option(
+        "user",
+        "The member to delete the message",
+        interactions.OptionType.USER,
+        required=True
+    )
+    @interactions.slash_option(
+        "channel_id",
+        "The channel ID of the channel",
+        interactions.OptionType.STRING,
+        required=True
+    )
+    async def cmd_channel_delete_messages(self, ctx: interactions.SlashContext, user: interactions.Member, channel_id: str):
+        channel = await self.bot.fetch_channel(channel_id)
+        dm = await user.fetch_dm(force=True)
+        button: interactions.Button = interactions.Button(
+            style=interactions.ButtonStyle.DANGER,
+            label="Click to agree deleting messages"
+        )
+        dm_msg: interactions.Message = await dm.send(
+            content=f"{ctx.author.mention} wants to delete all your messages in {channel.mention}",
+            components=[button]
+            )
+        await ctx.send("Awaiting for user's confirmation. Will timeout in 2 minutes.", ephemeral=True)
+        try:
+            component = await self.bot.wait_for_component(components=button, timeout=120)
+        except TimeoutError:
+            await ctx.channel.send("The user didn't agree to delete the messages within 2 minutes.")
+        else:
+            await ctx.channel.send("The user agreed to delete the message. Proceed with the deletion.")
+            msg_to_delete: list[interactions.Message] = []
+            async for message in channel.history(limit=0):
+                if message.author.id == user.id:
+                    msg_to_delete.append(message)
+            archived: bool = channel.archived
+            if archived:
+                await channel.edit(archived=False)
+            try:
+                await channel.delete_messages(msg_to_delete)
+            except:
+                await component.ctx.send("There are some messages might not deleted or not found")
+            finally:
+                if archived:
+                    await channel.edit(archived=True)
+                await component.ctx.send("Messages Deleted")
+                await ctx.channel.send("Message deletion completed")
+        finally:
+            button.disabled = True
+            await dm_msg.edit(components=button)
