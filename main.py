@@ -233,15 +233,17 @@ class Retr0initDiscordUtilities(interactions.Extension):
             archived: bool = channel.archived
             if archived:
                 await channel.edit(archived=False)
-            try:
-                await channel.delete_messages(msg_to_delete)
-            except:
-                await component.ctx.send("There are some messages might not deleted or not found")
-            finally:
-                if archived:
-                    await channel.edit(archived=True)
-                await component.ctx.send("Messages Deleted")
-                await ctx.channel.send("Message deletion completed")
+            for msg in msg_to_delete:
+                if msg is None:
+                    continue
+                try:
+                    await channel.delete_message(msg)
+                except:
+                    await component.ctx.send(f"{msg.jump_url} might not deleted")
+            if archived:
+                await channel.edit(archived=True)
+            await component.ctx.send("Messages Deleted")
+            await ctx.channel.send("Message deletion completed")
         finally:
             button.disabled = True
             await dm_msg.edit(components=button)
