@@ -230,6 +230,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
             await ctx.channel.send("The user didn't agree to delete the messages within 2 minutes.")
         else:
             await ctx.channel.send("The user agreed to delete the message. Proceed with the deletion.")
+            await component.ctx.send("The user agreed to delete the message. Proceed with the deletion.")
             msg_to_delete: list[interactions.Message] = []
             count_msg_deleted: int = 0
             count_msg_not_deleted: int = 0
@@ -249,7 +250,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                     count_msg_not_deleted += 1
             if archived:
                 await channel.edit(archived=True)
-            await component.ctx.send(f"Messages Deleted. Deleted {count_msg_deleted} messages. {count_msg_not_deleted} messages failed to delete.")
+            await dm.send(f"Messages Deleted. Deleted {count_msg_deleted} messages. {count_msg_not_deleted} messages failed to delete.")
             await ctx.channel.send(f"Message deletion completed. Deleted {count_msg_deleted} messages. {count_msg_not_deleted} messages failed to delete.")
         finally:
             button.disabled = True
