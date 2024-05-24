@@ -209,7 +209,11 @@ class Retr0initDiscordUtilities(interactions.Extension):
         required=True
     )
     async def cmd_channel_delete_messages(self, ctx: interactions.SlashContext, user: interactions.Member, channel_id: str):
-        channel = await self.bot.fetch_channel(channel_id)
+        try:
+            channel = await self.bot.fetch_channel(channel_id)
+        except:
+            await ctx.send("Channel ID is invalid!", ephemeral=True)
+            return
         dm = await user.fetch_dm(force=True)
         button: interactions.Button = interactions.Button(
             style=interactions.ButtonStyle.DANGER,
