@@ -43,6 +43,10 @@ class Retr0initDiscordUtilities(interactions.Extension):
         name="channel",
         description="Channel related utilities"
     )
+    module_group_u: interactions.SlashCommand = module_base.group(
+        name = "user",
+        description = "User related utilities"
+    )
 
     '''
     Check the permission to run the privileged command
@@ -255,3 +259,17 @@ class Retr0initDiscordUtilities(interactions.Extension):
         finally:
             button.disabled = True
             await dm_msg.edit(components=button)
+
+    @module_group_u.subcommand(
+        "remove_all_roles", sub_cmd_description="Remove all of the roles from a user"
+    )
+    @interactions.check(my_check)
+    @interactions.slash_option(
+        "user",
+        "The member to remove the role",
+        interactions.OptionType.USER,
+        required=True
+    )
+    async def cmd_user_remove_all_roles(self, ctx: interactions.SlashContext, user: interactions.Member) -> None:
+        await user.remove_roles(user.roles)
+        await ctx.send(f"User {user.display_name} removed all roles")
