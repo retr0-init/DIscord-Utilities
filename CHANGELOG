@@ -13,3 +13,6 @@
 
 # 20240524
 - Add message deletion command
+
+# 20240603
+- Add User delete role command
