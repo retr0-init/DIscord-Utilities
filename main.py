@@ -164,7 +164,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
             for ch in all_main_channels:
                 if isinstance(ch, interactions.MessageableMixin):
                     ch = cast(interactions.MessageableMixin, ch)
-                    for msg in ch.history(0):
+                    async for msg in ch.history(0):
                         msg: interactions.Message = cast(interactions.Message, msg)
                         try:
                             if msg.author.id == current_author.id:
@@ -174,7 +174,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                     ch = cast(interactions.GuildText, ch)
                     thread_list: interactions.ThreadList = await ch.fetch_active_threads()
                     for thread in thread_list.threads:
-                        for msg in thread.history(0):
+                        async for msg in thread.history(0):
                             try:
                                 if msg.author.id == current_author.id:
                                     await msg.delete()
@@ -183,7 +183,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                     thread_list = await ch.fetch_archived_threads()
                     for thread in thread_list.threads:
                         await thread.edit(archived=False)
-                        for msg in therad.history(0):
+                        async for msg in therad.history(0):
                             try:
                                 if msg.author.id == current_author.id:
                                     await msg.delete()
@@ -197,7 +197,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                         _archived: bool = post.archived
                         if _archived:
                             await post.edit(archived=False)
-                        for msg in post.history(0):
+                        async for msg in post.history(0):
                             try:
                                 if msg.author.id == current_author.id:
                                     await msg.delete()
