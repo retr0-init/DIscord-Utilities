@@ -145,7 +145,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         
     @module_group.subcommand("delete_all_ur_msg", sub_cmd_description="Delete all your messages in this guild and soft ban you to further delete msg")
     async def cmd_guild_deleteAllUrMsg(self, ctx: interactions.SlashContext) -> None:
-        this_channel: interactions.MessageableMixin = ctx.channel
+        this_channel: interactions.GuildChannel = ctx.channel
         modal: interactions.Modal = interactions.Modal(
             interactions.ParagraphText(
                 label="Please enter your username to confirm.",
@@ -156,7 +156,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         await ctx.send_modal(modal)
         modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal)
         modal_text: str = list(modal_ctx.responses.values())[0]
-        all_main_channels: list[interactions.GuildChannel] = ctx.guild.fetch_channels()
+        all_main_channels: list[interactions.GuildChannel] = await ctx.guild.fetch_channels()
         current_author: interactions.User = ctx.author
         not_deleted: int = 0
         if modal_text == ctx.author.global_name:
@@ -205,6 +205,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
                                 not_deleted += 1
                         if _archived:
                             await post.edit(archived=True)
+            await this_channel.send("Message deletion complete!")
+            await current_author.get_dm().send(f"Message delete in {this_channel.guild.name} completed!")
         else:
             await modal_ctx.send("Operation cancelled!", ephemeral=True)
 
