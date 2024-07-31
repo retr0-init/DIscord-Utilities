@@ -144,6 +144,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
             await aiofiles.os.remove(filename)
         
     @module_group.subcommand("delete_all_ur_msg", sub_cmd_description="Delete all your messages in this guild and soft ban you to further delete msg")
+    @interactions.max_concurrency(interactions.Buckets.GUILD, 2)
     async def cmd_guild_deleteAllUrMsg(self, ctx: interactions.SlashContext) -> None:
         this_channel: interactions.GuildChannel = ctx.channel
         modal: interactions.Modal = interactions.Modal(
@@ -207,7 +208,9 @@ class Retr0initDiscordUtilities(interactions.Extension):
                         if _archived:
                             await post.edit(archived=True)
             await this_channel.send("Message deletion complete!")
-            await current_author.get_dm().send(f"Message delete in {this_channel.guild.name} completed!")
+            _dm_ch = current_author.get_dm()
+            if _dm_ch:
+                await _dm_ch.send(f"Message delete in {this_channel.guild.name} completed!")
         else:
             await modal_ctx.send("Operation cancelled!", ephemeral=True)
 
