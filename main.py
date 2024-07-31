@@ -172,24 +172,25 @@ class Retr0initDiscordUtilities(interactions.Extension):
                         except Exception as e:
                             not_deleted += 1
                     ch = cast(interactions.GuildText, ch)
-                    thread_list: interactions.ThreadList = await ch.fetch_active_threads()
-                    for thread in thread_list.threads:
-                        async for msg in thread.history(0):
-                            try:
-                                if msg.author.id == current_author.id:
-                                    await msg.delete()
-                            except Exception as e:
-                                not_deleted += 1
-                    thread_list = await ch.fetch_archived_threads()
-                    for thread in thread_list.threads:
-                        await thread.edit(archived=False)
-                        async for msg in therad.history(0):
-                            try:
-                                if msg.author.id == current_author.id:
-                                    await msg.delete()
-                            except Exception as e:
-                                not_deleted += 1
-                        await thread.edit(archived=True)
+                    if isinstance(ch, interactions.GuildText):
+                        thread_list: interactions.ThreadList = await ch.fetch_active_threads()
+                        for thread in thread_list.threads:
+                            async for msg in thread.history(0):
+                                try:
+                                    if msg.author.id == current_author.id:
+                                        await msg.delete()
+                                except Exception as e:
+                                    not_deleted += 1
+                        thread_list = await ch.fetch_archived_threads()
+                        for thread in thread_list.threads:
+                            await thread.edit(archived=False)
+                            async for msg in therad.history(0):
+                                try:
+                                    if msg.author.id == current_author.id:
+                                        await msg.delete()
+                                except Exception as e:
+                                    not_deleted += 1
+                            await thread.edit(archived=True)
                 if isinstance(ch, interactions.GuildForum):
                     ch: interactions.GuildForum = cast(interactions.GuildForum, ch)
                     posts = ch.get_posts(exclude_archived=False)
