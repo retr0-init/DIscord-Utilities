@@ -22,7 +22,7 @@ from interactions.ext.paginators import Paginator
 import datetime
 import aiofiles
 import aiofiles.os
-from typing import Optional
+from typing import Optional, cast
 # Use the following method to import the internal module in the current same directory
 # from . import internal_t
 elevation_roles: list[int] = []
@@ -142,6 +142,71 @@ class Retr0initDiscordUtilities(interactions.Extension):
             await afp.close()
             await channel.send(f"All members joined more than {weeks}w{days}d{hours}h", file=filename)
             await aiofiles.os.remove(filename)
+        
+    @module_group.subcommand("delete_all_ur_msg", sub_cmd_description="Delete all your messages in this guild and soft ban you to further delete msg")
+    async def cmd_guild_deleteAllUrMsg(self, ctx: interactions.SlashContext) -> None:
+        this_channel: interactions.MessageableMixin = ctx.channel
+        modal: interactions.Modal = interactions.Modal(
+            interactions.ParagraphText(
+                label="Please enter your username to confirm.",
+                placeholder=f"Please enter your username. Start with {ctx.author.global_name[:2]}..."
+            ),
+            title="Are you sure?"
+        )
+        await ctx.send_modal(modal)
+        modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal)
+        modal_text: str = list(modal_ctx.responses.values())[0]
+        all_main_channels: list[interactions.GuildChannel] = ctx.guild.fetch_channels()
+        current_author: interactions.User = ctx.author
+        not_deleted: int = 0
+        if modal_text == ctx.author.global_name:
+            await modal_ctx.send("Deleting your messages...", ephemeral=True)
+            for ch in all_main_channels:
+                if isinstance(ch, interactions.MessageableMixin):
+                    ch = cast(interactions.MessageableMixin, ch)
+                    for msg in ch.history(0):
+                        msg: interactions.Message = cast(interactions.Message, msg)
+                        try:
+                            if msg.author.id == current_author.id:
+                                await msg.delete()
+                        except Exception as e:
+                            not_deleted += 1
+                    ch = cast(interactions.GuildText, ch)
+                    thread_list: interactions.ThreadList = await ch.fetch_active_threads()
+                    for thread in thread_list.threads:
+                        for msg in thread.history(0):
+                            try:
+                                if msg.author.id == current_author.id:
+                                    await msg.delete()
+                            except Exception as e:
+                                not_deleted += 1
+                    thread_list = await ch.fetch_archived_threads()
+                    for thread in thread_list.threads:
+                        await thread.edit(archived=False)
+                        for msg in therad.history(0):
+                            try:
+                                if msg.author.id == current_author.id:
+                                    await msg.delete()
+                            except Exception as e:
+                                not_deleted += 1
+                        await thread.edit(archived=True)
+                if isinstance(ch, interactions.GuildForum):
+                    ch: interactions.GuildForum = cast(interactions.GuildForum, ch)
+                    posts = ch.get_posts(exclude_archived=False)
+                    for post in posts:
+                        _archived: bool = post.archived
+                        if _archived:
+                            await post.edit(archived=False)
+                        for msg in post.history(0):
+                            try:
+                                if msg.author.id == current_author.id:
+                                    await msg.delete()
+                            except Exception as e:
+                                not_deleted += 1
+                        if _archived:
+                            await post.edit(archived=True)
+        else:
+            await modal_ctx.send("Operation cancelled!", ephemeral=True)
 
     @module_group_c.subcommand("rate_limit", sub_cmd_description="(Privileged) Rate limit a channel")
     @interactions.check(my_check)
