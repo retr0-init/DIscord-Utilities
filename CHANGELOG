@@ -17,5 +17,5 @@
 # 20240603
 - Add User delete role command
 
-# 20240731
-- Add Guild message mass delete command (DRAFT)
+# 20240801
+- Add Guild message mass delete command

@@ -10,6 +10,7 @@ The default setting is that only the bot owner can run all commands including th
 
 ## Guild
 - `/utility guild members_older_than` returns all the members who join this guild more than `a` weeks `b` days `c` hours. Default to be 30 days. **_This Command is Privileged._**
+- `/utility guild delete_all_ur_msg` deletes all the user's message in this guild. A confirmation dialog will appear to request username to confirm the deletion. _Only two instances of this command can run at the same time._
 
 ## Channel
 - `/utility channel rate_limit` set the rate limit per user of a channel. **_This Command is Privileged._**
