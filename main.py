@@ -160,7 +160,20 @@ class Retr0initDiscordUtilities(interactions.Extension):
         all_main_channels: list[interactions.GuildChannel] = await ctx.guild.fetch_channels()
         current_author: interactions.User = ctx.author
         not_deleted: int = 0
-        if modal_text == ctx.author.global_name:
+        async def __delete_msg_in_post(post: interactions.GuildForumPost) -> None:
+            global not_deleted
+            _archived: bool = post.archived
+            if _archived:
+                await post.edit(archived=False)
+            async for msg in post.history(0):
+                try:
+                    if msg.author.id == current_author.id:
+                        await msg.delete()
+                except Exception as e:
+                    not_deleted += 1
+            if _archived:
+                await post.edit(archived=True)
+        if modal_text == current_author.global_name:
             await modal_ctx.send("Deleting your messages...", ephemeral=True)
             for ch in all_main_channels:
                 if isinstance(ch, interactions.MessageableMixin):
@@ -194,19 +207,14 @@ class Retr0initDiscordUtilities(interactions.Extension):
                             await thread.edit(archived=True)
                 if isinstance(ch, interactions.GuildForum):
                     ch: interactions.GuildForum = cast(interactions.GuildForum, ch)
-                    posts = ch.get_posts(exclude_archived=False)
+                    posts = ch.get_posts()
                     for post in posts:
-                        _archived: bool = post.archived
-                        if _archived:
-                            await post.edit(archived=False)
-                        async for msg in post.history(0):
-                            try:
-                                if msg.author.id == current_author.id:
-                                    await msg.delete()
-                            except Exception as e:
-                                not_deleted += 1
-                        if _archived:
-                            await post.edit(archived=True)
+                        await __delete_msg_in_post(post)
+                    _posts = await self.bot.http.list_public_archived_threads(channel_id=ch.id)
+                    posts = [int(_["id"]) for _ in _posts["threads"]]
+                    for p in posts:
+                        post: interactions.GuildForumPost = await self.bot.fetch_channel(channel_id=p)
+                        await __delete_msg_in_post(post)
             await this_channel.send("Message deletion complete!")
             _dm_ch = current_author.get_dm()
             if _dm_ch:
