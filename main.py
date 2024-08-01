@@ -47,6 +47,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         name = "user",
         description = "User related utilities"
     )
+    cmd_guild_deleteAllUrMsg_members: list[int] = []
 
     '''
     Check the permission to run the privileged command
@@ -146,6 +147,10 @@ class Retr0initDiscordUtilities(interactions.Extension):
     @module_group.subcommand("delete_all_ur_msg", sub_cmd_description="Delete all your messages in this guild and soft ban you to further delete msg")
     @interactions.max_concurrency(interactions.Buckets.GUILD, 2)
     async def cmd_guild_deleteAllUrMsg(self, ctx: interactions.SlashContext) -> None:
+        if ctx.author.id in self.cmd_guild_deleteAllUrMsg_members:
+            await ctx.send("You are already running this command!", ephemeral=True)
+            return
+        self.cmd_guild_deleteAllUrMsg_members.append(ctx.author.id)
         this_channel: interactions.GuildChannel = ctx.channel
         modal: interactions.Modal = interactions.Modal(
             interactions.ParagraphText(
@@ -221,6 +226,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                 await _dm_ch.send(f"Message delete in {this_channel.guild.name} completed!")
         else:
             await modal_ctx.send("Operation cancelled!", ephemeral=True)
+        self.cmd_guild_deleteAllUrMsg_members.remove(current_author.id)
 
     @module_group_c.subcommand("rate_limit", sub_cmd_description="(Privileged) Rate limit a channel")
     @interactions.check(my_check)
