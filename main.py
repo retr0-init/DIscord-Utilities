@@ -165,6 +165,15 @@ class Retr0initDiscordUtilities(interactions.Extension):
         all_main_channels: list[interactions.GuildChannel] = await ctx.guild.fetch_channels()
         current_author: interactions.User = ctx.author
         not_deleted: int = 0
+        async def __delete_reactions_from_message(msg: interactions.Message) -> None:
+            global not_deleted
+            try:
+                for react in msg.reactions:
+                    usr_list: list[interactions.User] = await react.users().fetch()
+                    if any(current_author.id == usr.id for usr in usr_list):
+                        await msg.remove_reaction(react.emoji, member=current_author)
+            except Exception as e:
+                not_deleted += 1
         async def __delete_msg_in_post(post: interactions.GuildForumPost) -> None:
             global not_deleted
             _archived: bool = post.archived
@@ -174,6 +183,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
                 try:
                     if msg.author.id == current_author.id:
                         await msg.delete()
+                    else:
+                        await __delete_reactions_from_message(msg)
                 except Exception as e:
                     not_deleted += 1
             if _archived:
@@ -188,6 +199,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
                         try:
                             if msg.author.id == current_author.id:
                                 await msg.delete()
+                            else:
+                                await __delete_reactions_from_message(msg)
                         except Exception as e:
                             not_deleted += 1
                     ch = cast(interactions.GuildText, ch)
@@ -198,6 +211,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
                                 try:
                                     if msg.author.id == current_author.id:
                                         await msg.delete()
+                                    else:
+                                        await __delete_reactions_from_message(msg)
                                 except Exception as e:
                                     not_deleted += 1
                         thread_list = await ch.fetch_archived_threads()
@@ -207,6 +222,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
                                 try:
                                     if msg.author.id == current_author.id:
                                         await msg.delete()
+                                    else:
+                                        await __delete_reactions_from_message(msg)
                                 except Exception as e:
                                     not_deleted += 1
                             await thread.edit(archived=True)
