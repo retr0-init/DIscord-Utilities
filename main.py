@@ -203,7 +203,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                         thread_list = await ch.fetch_archived_threads()
                         for thread in thread_list.threads:
                             await thread.edit(archived=False)
-                            async for msg in therad.history(0):
+                            async for msg in thread.history(0):
                                 try:
                                     if msg.author.id == current_author.id:
                                         await msg.delete()
