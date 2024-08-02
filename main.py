@@ -190,7 +190,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                     not_deleted += 1
             if _archived:
                 await post.edit(archived=True)
-        if modal_text == confirmation_msg:
+        if modal_text.strip() == confirmation_msg:
             await modal_ctx.send("Deleting your messages...", ephemeral=True)
             for ch in all_main_channels:
                 if isinstance(ch, interactions.MessageableMixin):
