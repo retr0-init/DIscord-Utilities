@@ -153,6 +153,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
             return
         self.cmd_guild_deleteAllUrMsg_members.append(ctx.author.id)
         this_channel: interactions.GuildChannel = ctx.channel
+        current_author: interactions.User = ctx.author
         confirmation_msg: str = "DELETE ME"
         modal: interactions.Modal = interactions.Modal(
             interactions.ParagraphText(
@@ -165,10 +166,10 @@ class Retr0initDiscordUtilities(interactions.Extension):
         try:
             modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal, timeout=15)
         except asyncio.TimeoutError:
+            self.cmd_guild_deleteAllUrMsg_members.remove(current_author.id)
             return
         modal_text: str = list(modal_ctx.responses.values())[0]
         all_main_channels: list[interactions.GuildChannel] = await ctx.guild.fetch_channels()
-        current_author: interactions.User = ctx.author
         not_deleted: int = 0
         async def __delete_reactions_from_message(msg: interactions.Message) -> None:
             global not_deleted
