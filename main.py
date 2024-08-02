@@ -161,7 +161,10 @@ class Retr0initDiscordUtilities(interactions.Extension):
             title="Are you sure?"
         )
         await ctx.send_modal(modal)
-        modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal)
+        try:
+            modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal, timeout=15)
+        except asyncio.TimeoutError:
+            return
         modal_text: str = list(modal_ctx.responses.values())[0]
         all_main_channels: list[interactions.GuildChannel] = await ctx.guild.fetch_channels()
         current_author: interactions.User = ctx.author
