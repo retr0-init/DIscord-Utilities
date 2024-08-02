@@ -152,10 +152,11 @@ class Retr0initDiscordUtilities(interactions.Extension):
             return
         self.cmd_guild_deleteAllUrMsg_members.append(ctx.author.id)
         this_channel: interactions.GuildChannel = ctx.channel
+        confirmation_msg: str = "DELETE ME"
         modal: interactions.Modal = interactions.Modal(
             interactions.ParagraphText(
-                label="Please enter your username to confirm.",
-                placeholder=f"Please enter your username. Start with {ctx.author.global_name[:2]}..."
+                label=f"Please enter '{confirmation_msg}' to confirm.",
+                placeholder=f"{confirmation_msg}"
             ),
             title="Are you sure?"
         )
@@ -189,7 +190,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                     not_deleted += 1
             if _archived:
                 await post.edit(archived=True)
-        if modal_text == current_author.global_name:
+        if modal_text == confirmation_msg:
             await modal_ctx.send("Deleting your messages...", ephemeral=True)
             for ch in all_main_channels:
                 if isinstance(ch, interactions.MessageableMixin):
