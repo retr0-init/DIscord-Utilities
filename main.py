@@ -23,6 +23,7 @@ import datetime
 import aiofiles
 import aiofiles.os
 from typing import Optional, cast
+import asyncio
 # Use the following method to import the internal module in the current same directory
 # from . import internal_t
 elevation_roles: list[int] = []
@@ -152,18 +153,23 @@ class Retr0initDiscordUtilities(interactions.Extension):
             return
         self.cmd_guild_deleteAllUrMsg_members.append(ctx.author.id)
         this_channel: interactions.GuildChannel = ctx.channel
+        current_author: interactions.User = ctx.author
+        confirmation_msg: str = "DELETE ME"
         modal: interactions.Modal = interactions.Modal(
             interactions.ParagraphText(
-                label="Please enter your username to confirm.",
-                placeholder=f"Please enter your username. Start with {ctx.author.global_name[:2]}..."
+                label=f"Please enter '{confirmation_msg}' to confirm.",
+                placeholder=f"{confirmation_msg}"
             ),
             title="Are you sure?"
         )
         await ctx.send_modal(modal)
-        modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal)
+        try:
+            modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal, timeout=15)
+        except asyncio.TimeoutError:
+            self.cmd_guild_deleteAllUrMsg_members.remove(current_author.id)
+            return
         modal_text: str = list(modal_ctx.responses.values())[0]
         all_main_channels: list[interactions.GuildChannel] = await ctx.guild.fetch_channels()
-        current_author: interactions.User = ctx.author
         not_deleted: int = 0
         async def __delete_reactions_from_message(msg: interactions.Message) -> None:
             global not_deleted
@@ -191,7 +197,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
                     not_deleted += 1
             if _archived:
                 await post.edit(archived=True)
-        if modal_text == current_author.global_name:
+        if modal_text.strip() == confirmation_msg:
             await modal_ctx.send("Deleting your messages...", ephemeral=True)
             for ch in all_main_channels:
                 if isinstance(ch, interactions.MessageableMixin):
