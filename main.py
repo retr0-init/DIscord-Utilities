@@ -24,6 +24,10 @@ import aiofiles
 import aiofiles.os
 from typing import Optional, cast
 import asyncio
+import traceback
+from src import logutil
+
+logger = logutil.init_logger("Discord-Utilities")
 # Use the following method to import the internal module in the current same directory
 # from . import internal_t
 elevation_roles: list[int] = []
@@ -180,71 +184,101 @@ class Retr0initDiscordUtilities(interactions.Extension):
                         await msg.remove_reaction(react.emoji, member=current_author)
             except Exception as e:
                 not_deleted += 1
-        def __is_delete(msg: interactions.Message, user_id: int) -> bool:
-            return msg.author.id == user_id or (msg.interaction_metadata and msg.interaction_metadata._user_id == user_id)
-        async def __delete_msg_in_post(post: interactions.GuildForumPost) -> None:
+        def __is_delete(msg: Optional[interactions.Message], user_id: int) -> bool:
+            return msg and (msg.author.id == user_id or (msg.interaction_metadata and msg.interaction_metadata._user_id == user_id))
+        async def __delete_all_msgs_in_messagable(channel: interactions.MessageableMixin) -> None:
+            """
+            Delete all messages in MessagableMixin. Skip extra exceptions.
+            """
             global not_deleted
-            _archived: bool = post.archived
-            if _archived:
-                await post.edit(archived=False)
-            async for msg in post.history(0):
+            archived: bool = False
+            skip_this_loop: bool = False
+            msg: interactions.Message = None
+            if isinstance(channel, interactions.ThreadChannel):
+                channel: interactions.ThreadChannel = cast(interactions.ThreadChannel, channel)
+                archived = channel.archived
+                if archived:
+                    try:
+                        await channel.edit(archived=False)
+                    except Exception:
+                        logger.error(traceback.format_exc())
+                        return
+            history: interactions.ChannelHistory = channel.history(0)
+            while True:
                 try:
+                    if not skip_this_loop:
+                        msg = await history.__anext__()
+                        skip_this_loop = False
                     if __is_delete(msg, current_author.id):
                         await msg.delete()
                     else:
                         await __delete_reactions_from_message(msg)
-                except Exception as e:
+                except StopAsyncIteration:
+                    break
+                except interactions.errors.HTTPException as e:
+                    match int(e.code):
+                        case 50083:
+                            """Operation in archived thread"""
+                            skip_this_loop = True
+                            archived = True
+                            try:
+                                await channel.edit(archived=False)
+                            except Exception:
+                                logger.error(traceback.format_exc())
+                                return
+                        case 10003:
+                            """Unknown channel"""
+                            return
+                        case 10008:
+                            """Unknown message"""
+                            return
+                        case 50001:
+                            """No Access"""
+                            return
+                        case 50013:
+                            """Lack permission"""
+                            return
+                        case 50021:
+                            """Cannot execute on system message"""
+                            pass
+                        case 160005:
+                            """Thread is locked"""
+                            pass
+                        case _:
+                            """Default"""
+                            pass
+                except Exception:
                     not_deleted += 1
-            if _archived:
-                await post.edit(archived=True)
+                    logger.error(traceback.format_exc())
+            if archived:
+                try:
+                    await channel.edit(archived=True)
+                except Exception:
+                    logger.error(traceback.format_exc())
         if modal_text.strip() == confirmation_msg:
             await modal_ctx.send("Deleting your messages...", ephemeral=True)
             for ch in all_main_channels:
                 if isinstance(ch, interactions.MessageableMixin):
                     ch = cast(interactions.MessageableMixin, ch)
-                    async for msg in ch.history(0):
-                        msg: interactions.Message = cast(interactions.Message, msg)
-                        try:
-                            if __is_delete(msg, current_author.id):
-                                await msg.delete()
-                            else:
-                                await __delete_reactions_from_message(msg)
-                        except Exception as e:
-                            not_deleted += 1
+                    await __delete_all_msgs_in_messagable(ch)
                     ch = cast(interactions.GuildText, ch)
                     if isinstance(ch, interactions.GuildText):
                         thread_list: interactions.ThreadList = await ch.fetch_active_threads()
                         for thread in thread_list.threads:
-                            async for msg in thread.history(0):
-                                try:
-                                    if __is_delete(msg, current_author.id):
-                                        await msg.delete()
-                                    else:
-                                        await __delete_reactions_from_message(msg)
-                                except Exception as e:
-                                    not_deleted += 1
+                            await __delete_all_msgs_in_messagable(thread)
                         thread_list = await ch.fetch_archived_threads()
                         for thread in thread_list.threads:
-                            await thread.edit(archived=False)
-                            async for msg in thread.history(0):
-                                try:
-                                    if __is_delete(msg, current_author.id):
-                                        await msg.delete()
-                                    else:
-                                        await __delete_reactions_from_message(msg)
-                                except Exception as e:
-                                    not_deleted += 1
-                            await thread.edit(archived=True)
+                            await __delete_all_msgs_in_messagable(thread)
                 if isinstance(ch, interactions.GuildForum):
                     ch: interactions.GuildForum = cast(interactions.GuildForum, ch)
                     posts = ch.get_posts()
                     for post in posts:
-                        await __delete_msg_in_post(post)
+                        await __delete_all_msgs_in_messagable(post)
                     _posts = await self.bot.http.list_public_archived_threads(channel_id=ch.id)
                     posts = [int(_["id"]) for _ in _posts["threads"]]
                     for p in posts:
                         post: interactions.GuildForumPost = await self.bot.fetch_channel(channel_id=p)
-                        await __delete_msg_in_post(post)
+                        await __delete_all_msgs_in_messagable(post)
             await this_channel.send("Message deletion complete!")
             _dm_ch = current_author.get_dm()
             if _dm_ch:

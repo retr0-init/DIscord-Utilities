@@ -20,5 +20,6 @@
 # 20240801
 - Add Guild message mass delete command
 
-# 20240806
-- Delete interaction responses (DRAFT)
+# 20240807
+- Delete interaction responses
+- Improved Message interation deletion error handling
