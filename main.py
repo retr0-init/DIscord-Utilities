@@ -192,17 +192,12 @@ class Retr0initDiscordUtilities(interactions.Extension):
             """
             global not_deleted
             archived: bool = False
+            archived_operated: bool = False
             skip_this_loop: bool = False
             msg: interactions.Message = None
             if isinstance(channel, interactions.ThreadChannel):
                 channel: interactions.ThreadChannel = cast(interactions.ThreadChannel, channel)
                 archived = channel.archived
-                if archived:
-                    try:
-                        await channel.edit(archived=False)
-                    except Exception:
-                        logger.error(traceback.format_exc())
-                        return
             history: interactions.ChannelHistory = channel.history(0)
             while True:
                 try:
@@ -210,6 +205,13 @@ class Retr0initDiscordUtilities(interactions.Extension):
                         msg = await history.__anext__()
                         skip_this_loop = False
                     if __is_delete(msg, current_author.id):
+                        if archived and not archived_operated:
+                            try:
+                                await channel.edit(archived=False)
+                                archived_operated = True
+                            except Exception:
+                                logger.error(traceback.format_exc())
+                                return
                         await msg.delete()
                     else:
                         await __delete_reactions_from_message(msg)
