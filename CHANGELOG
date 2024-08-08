@@ -24,3 +24,6 @@
 - Delete interaction responses
 - Improved Message interation deletion error handling
 - Only unarchive the thread with the required messages
+
+# 20240809
+- Remove unneccesary `not_delete` variable

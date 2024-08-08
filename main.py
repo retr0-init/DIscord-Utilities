@@ -174,23 +174,20 @@ class Retr0initDiscordUtilities(interactions.Extension):
             return
         modal_text: str = list(modal_ctx.responses.values())[0]
         all_main_channels: list[interactions.GuildChannel] = await ctx.guild.fetch_channels()
-        not_deleted: int = 0
         async def __delete_reactions_from_message(msg: interactions.Message) -> None:
-            global not_deleted
             try:
                 for react in msg.reactions:
                     usr_list: list[interactions.User] = await react.users().fetch()
                     if any(current_author.id == usr.id for usr in usr_list):
                         await msg.remove_reaction(react.emoji, member=current_author)
             except Exception as e:
-                not_deleted += 1
+                logger.error(traceback.format_exc())
         def __is_delete(msg: Optional[interactions.Message], user_id: int) -> bool:
             return msg and (msg.author.id == user_id or (msg.interaction_metadata and msg.interaction_metadata._user_id == user_id))
         async def __delete_all_msgs_in_messagable(channel: interactions.MessageableMixin) -> None:
             """
             Delete all messages in MessagableMixin. Skip extra exceptions.
             """
-            global not_deleted
             archived: bool = False
             archived_operated: bool = False
             skip_this_loop: bool = False
@@ -250,7 +247,6 @@ class Retr0initDiscordUtilities(interactions.Extension):
                             """Default"""
                             pass
                 except Exception:
-                    not_deleted += 1
                     logger.error(traceback.format_exc())
             if archived:
                 try:
