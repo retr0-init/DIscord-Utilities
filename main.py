@@ -159,16 +159,17 @@ class Retr0initDiscordUtilities(interactions.Extension):
         this_channel: interactions.GuildChannel = ctx.channel
         current_author: interactions.User = ctx.author
         confirmation_msg: str = "DELETE ME"
+        modal_timeout: int = 60
         modal: interactions.Modal = interactions.Modal(
             interactions.ParagraphText(
-                label=f"Please enter '{confirmation_msg}' to confirm.",
+                label=f"Please enter '{confirmation_msg}' in {modal_timeout} seconds to confirm.",
                 placeholder=f"{confirmation_msg}"
             ),
             title="Are you sure?"
         )
         await ctx.send_modal(modal)
         try:
-            modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal, timeout=60)
+            modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal, timeout=modal_timeout)
         except asyncio.TimeoutError:
             self.cmd_guild_deleteAllUrMsg_members.remove(current_author.id)
             return
