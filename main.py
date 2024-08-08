@@ -162,7 +162,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         modal_timeout: int = 60
         modal: interactions.Modal = interactions.Modal(
             interactions.ParagraphText(
-                label=f"Please enter '{confirmation_msg}' in {modal_timeout} seconds to confirm.",
+                label=f"Please enter '{confirmation_msg}' in {modal_timeout} seconds",
                 placeholder=f"{confirmation_msg}"
             ),
             title="Are you sure?"
