@@ -27,3 +27,4 @@
 
 # 20240809
 - Remove unneccesary `not_delete` variable
+- Increase the modal timeout to be 60 seconds.

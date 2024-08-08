@@ -168,7 +168,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         )
         await ctx.send_modal(modal)
         try:
-            modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal, timeout=15)
+            modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal, timeout=60)
         except asyncio.TimeoutError:
             self.cmd_guild_deleteAllUrMsg_members.remove(current_author.id)
             return
