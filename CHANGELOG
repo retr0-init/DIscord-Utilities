@@ -30,3 +30,4 @@
 - Increase the modal timeout to be 60 seconds
 - More accurate modal text
 - Reduce modal label string length
+- Exclude Channel None case

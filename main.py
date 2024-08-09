@@ -189,6 +189,9 @@ class Retr0initDiscordUtilities(interactions.Extension):
             """
             Delete all messages in MessagableMixin. Skip extra exceptions.
             """
+            if channel is None:
+                logger.error("Channel is None")
+                return
             archived: bool = False
             archived_operated: bool = False
             skip_this_loop: bool = False
