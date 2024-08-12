@@ -387,7 +387,9 @@ class Retr0initDiscordUtilities(interactions.Extension):
             async for message in channel.history(limit=0):
                 if message.author.id == user.id:
                     msg_to_delete.append(message)
-            archived: bool = channel.archived
+            archived: bool = False
+            if isinstance(channel, interactions.ThreadChannel):
+                archived = channel.archived
             if archived:
                 await channel.edit(archived=False)
             for msg in msg_to_delete:
