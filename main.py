@@ -446,7 +446,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
             try:
                 url, modname, validated = giturl_parse("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
                 if validated:
-                    libmigrate: ModuleType = import_module(f"...{modname}.lib", package=__name__)
+                    libmigrate = import_module(f"...{modname}.lib", package=__name__)
                     libmigrate_loaded = True
                 # 等价于：
                 # from .. import github_d_com__retr0_h_init_s_libdiscord_h_ipy_h_migrate.lib as libmigrate
