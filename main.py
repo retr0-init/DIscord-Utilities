@@ -30,6 +30,9 @@ from src import logutil
 from src.moduleutil import giturl_parse
 from importlib import import_module
 from types import ModuleType
+
+logger = logutil.init_logger("Discord-Utilities")
+
 libmigrate_loaded: bool = False
 try:
     url, modname, validated = giturl_parse("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
@@ -39,9 +42,7 @@ try:
     # 等价于：
     # from .. import github_d_com__retr0_h_init_s_libdiscord_h_ipy_h_migrate.lib as libmigrate
 except ImportError:
-    print(f"Module Library {modname} import error or is not loaded!")
-
-logger = logutil.init_logger("Discord-Utilities")
+    logger.error(f"Module Library {modname} import error or is not loaded!")
 # Use the following method to import the internal module in the current same directory
 # from . import internal_t
 elevation_roles: list[int] = []
@@ -439,12 +440,23 @@ class Retr0initDiscordUtilities(interactions.Extension):
         required=True
     )
     async def cmd_channel_channel(self, ctx: interactions.SlashContext, origin: interactions.GuildChannel, destination: interactions.GuildChannel) -> None:
+        global libmigrate
+        global libmigrate_loaded
         if not libmigrate_loaded:
-            await ctx.send(
-                "Required library https://github.com/retr0-init/libdiscord-ipy-migrate.git not loaded. Please contact the admin to load it!",
-                ephemeral=True,
-                suppress_embeds=True)
-            return
+            try:
+                url, modname, validated = giturl_parse("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
+                if validated:
+                    libmigrate: ModuleType = import_module(f"...{modname}.lib", package=__name__)
+                    libmigrate_loaded = True
+                # 等价于：
+                # from .. import github_d_com__retr0_h_init_s_libdiscord_h_ipy_h_migrate.lib as libmigrate
+            except ImportError:
+                logger.error(f"Module Library {modname} import error or is not loaded!")
+                await ctx.send(
+                    "Required library https://github.com/retr0-init/libdiscord-ipy-migrate.git not loaded. Please contact the admin to load it!",
+                    ephemeral=True,
+                    suppress_embeds=True)
+                return
         valid_dest_types: list = [interactions.GuildText, interactions.GuildForum]
         valid_orig_types: list = [interactions.GuildForumPost, interactions.GuildPublicThread]
         if not any(isinstance(origin, _) for _ in valid_orig_types + valid_dest_types):
