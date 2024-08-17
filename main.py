@@ -27,6 +27,20 @@ import asyncio
 import traceback
 from src import logutil
 
+from src.moduleutil import giturl_parse
+from importlib import import_module
+from types import ModuleType
+libmigrate_loaded: bool = False
+try:
+    url, modname, validated = giturl_parse("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
+    if validated:
+        libmigrate: ModuleType = import_module(f"...{modname}.lib", package=__name__)
+        libmigrate_loaded = True
+    # 等价于：
+    # from .. import github_d_com__retr0_h_init_s_libdiscord_h_ipy_h_migrate.lib as libmigrate
+except ImportError:
+    print(f"Module Library {modname} import error or is not loaded!")
+
 logger = logutil.init_logger("Discord-Utilities")
 # Use the following method to import the internal module in the current same directory
 # from . import internal_t
@@ -407,6 +421,78 @@ class Retr0initDiscordUtilities(interactions.Extension):
         finally:
             button.disabled = True
             await dm_msg.edit(components=button)
+
+    @module_group_c.subcommand(
+        "migrate", sub_cmd_description="Migrate messages from one channel to the other one"
+    )
+    @interactions.check(my_check)
+    @interactions.slash_option(
+        "origin",
+        "The origin channel to migrate from",
+        interactions.OptionType.CHANNEL,
+        required=True
+    )
+    @interactions.slash_option(
+        "destination",
+        "The destination channel to migrate to",
+        interactions.OptionType.CHANNEL,
+        required=True
+    )
+    async def cmd_channel_channel(self, ctx: interactions.SlashContext, origin: interactions.GuildChannel, destination: interactions.GuildChannel) -> None:
+        if not libmigrate_loaded:
+            await ctx.send(
+                "Required library https://github.com/retr0-init/libdiscord-ipy-migrate.git not loaded. Please contact the admin to load it!",
+                ephemeral=True,
+                suppress_embeds=True)
+            return
+        valid_dest_types: list = [interactions.GuildText, interactions.GuildForum]
+        valid_orig_types: list = [interactions.GuildForumPost, interactions.GuildPublicThread]
+        if not any(isinstance(origin, _) for _ in valid_orig_types + valid_dest_types):
+            await ctx.send(
+                """The origin channel must be one of the following:
+                - Forum
+                - Forum Post
+                - Text Channel
+                - Public Thread in Text Channel""",
+                ephemeral=True
+            )
+            return
+        if not any(isinstance(destination, _) for _ in valid_dest_types):
+            await ctx.send(
+                """The destination channel must be one of the following:
+                - Forum
+                - Text Channel""",
+                ephemeral=True
+            )
+            return
+        valid_orig_dest_pair: tuple[tuple] = (
+            (interactions.GuildText, interactions.GuildText),
+            (interactions.GuildForum, interactions.GuildForum),
+            (interactions.GuildForumPost, interactions.GuildForum),
+            (interactions.GuildPublicThread, interactions.GuildText)
+        )
+        check_valid = lambda l: any(isinstance(origin, i) and isinstance(destination, j) for i, j in l)
+        if not check_valid(valid_orig_dest_pair):
+            await ctx.send(
+                """Only the following migrations are supported:
+                - Text Channel -> Text Channel
+                - Forum -> Forum
+                - Public Thread in Text Channel -> Text Channel
+                - Forum Post -> Forum""",
+                ephemeral=True
+            )
+            return
+        
+        await ctx.send(f"Migrating {origin.mention} to {destination.mention}...", ephemeral=True)
+        ch_send = ctx.channel
+        if check_valid(valid_orig_dest_pair[:2]):
+            await libmigrate.migrate_channel(origin, destination)
+            await ch_send.send("Migration completed!")
+            return
+        if check_valid(valid_dest_types[2:]):
+            await libmigrate.migrate_thread(origin, destination)
+            await ch_send.send("Migration completed!")
+            return
 
     @module_group_u.subcommand(
         "remove_all_roles", sub_cmd_description="Remove all of the roles from a user"

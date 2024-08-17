@@ -31,3 +31,6 @@
 - More accurate modal text
 - Reduce modal label string length
 - Exclude Channel None case
+
+# 20240817
+- Add channel migration command (DRAFT)
