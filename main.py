@@ -439,7 +439,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         interactions.OptionType.CHANNEL,
         required=True
     )
-    async def cmd_channel_channel(self, ctx: interactions.SlashContext, origin: interactions.GuildChannel, destination: interactions.GuildChannel) -> None:
+    async def cmd_channel_migrate(self, ctx: interactions.SlashContext, origin: interactions.GuildChannel, destination: interactions.GuildChannel) -> None:
         global libmigrate
         global libmigrate_loaded
         if not libmigrate_loaded:
