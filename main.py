@@ -501,10 +501,11 @@ class Retr0initDiscordUtilities(interactions.Extension):
             await libmigrate.migrate_channel(origin, destination)
             await ch_send.send("Migration completed!")
             return
-        if check_valid(valid_dest_types[2:]):
+        if check_valid(valid_orig_dest_pair[2:]):
             await libmigrate.migrate_thread(origin, destination)
             await ch_send.send("Migration completed!")
             return
+        await ctx.send("Something went wrong. Please contact the admin!", ephemeral=True)
 
     @module_group_u.subcommand(
         "remove_all_roles", sub_cmd_description="Remove all of the roles from a user"
