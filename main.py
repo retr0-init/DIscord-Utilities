@@ -498,7 +498,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         await ctx.send(f"Migrating {origin.mention} to {destination.mention}...", ephemeral=True)
         ch_send = ctx.channel
         if check_valid(valid_orig_dest_pair[:2]):
-            await libmigrate.migrate_channel(origin, destination)
+            await libmigrate.migrate_channel(origin, destination, ctx.bot)
             await ch_send.send("Migration completed!")
             return
         if check_valid(valid_orig_dest_pair[2:]):
