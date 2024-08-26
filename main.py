@@ -167,6 +167,10 @@ class Retr0initDiscordUtilities(interactions.Extension):
     @module_group.subcommand("delete_all_ur_msg", sub_cmd_description="Delete all your messages in this guild and soft ban you to further delete msg")
     @interactions.max_concurrency(interactions.Buckets.GUILD, 2)
     async def cmd_guild_deleteAllUrMsg(self, ctx: interactions.SlashContext) -> None:
+        # TODO remove it after fully tested development
+        await ctx.send("Please use `/utility channel delete_user_messages` instead! This command is currently still in development.", ephemeral=True)
+        return
+
         if ctx.author.id in self.cmd_guild_deleteAllUrMsg_members:
             await ctx.send("You are already running this command!", ephemeral=True)
             return
@@ -360,7 +364,6 @@ class Retr0initDiscordUtilities(interactions.Extension):
     @module_group_c.subcommand(
         "delete_user_messages", sub_cmd_description="Delete all messages from a specific user in a channel"
     )
-    @interactions.check(my_check)
     @interactions.slash_option(
         "user",
         "The member to delete the message",

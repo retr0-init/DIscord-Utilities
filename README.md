@@ -15,7 +15,7 @@ The default setting is that only the bot owner can run all commands including th
 ## Channel
 - `/utility channel rate_limit` set the rate limit per user of a channel. **_This Command is Privileged._**
 - `/utility channel archive` archives a post or thread. It can also lock and give a reason with optional parameters. **_This Command is Privileged._**
-- `/utility channel delete_user_messages` deletes all messages from a member in a certain channel. **_This Command is Privileged._**
+- `/utility channel delete_user_messages` deletes all messages from a member in a certain channel. _This requires the target user open DM permission in the current guild and press the button to accept the deletion._
 - `/utility channel migrate` migrates a channel to another channel. **_This Command is Privileged_**
 
 ## User

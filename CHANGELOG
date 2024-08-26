@@ -33,4 +33,8 @@
 - Exclude Channel None case
 
 # 20240822
-- Add channel migration command (DRAFT)
+- Add channel migration command
+
+# 20240826
+- Open access of `delete_user_messages` to everyone
+- Temporarily limit the access of the broken `delete_all_ur_msg` command
