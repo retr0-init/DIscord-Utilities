@@ -219,7 +219,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         required = True,
         opt_type = interactions.OptionType.USER
     )
-    async def cmd_elevateMember(self, ctx: interactions.SlashContext, member: interactions.User):
+    async def operatorMember(self, ctx: interactions.SlashContext, member: interactions.User):
         await self._update_operators(operator_uid=member.id)
         await ctx.send(f"Member {member.display_name}({member.username}) has been elevated for operator utility commands!")
     
