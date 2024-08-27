@@ -65,6 +65,8 @@ elevation_roles: list[int] = []
 elevation_members: list[int] = []
 operators: Operators = None
 
+operators_store_filename: str = f"{os.path.dirname(__file__)}/operators.json"
+
 async def my_check(ctx: interactions.BaseContext) -> bool:
     '''
     Check the permission to run the privileged command
@@ -75,10 +77,35 @@ async def my_check(ctx: interactions.BaseContext) -> bool:
     u: bool = any(map(ctx.author.id.__eq__, elevation_members)) if len(elevation_members) > 0 else False
     return res or r or u
 
+async def _save_operator_file() -> None:
+    async with aiofiles.open(operators_store_filename, "w", encoding="utf-8") as f:
+        await f.write(operators.json())
+
+async def _create_empty_operator_file() -> None:
+    global operators
+    operators = Operators(operator_users = list(), operator_roles = list())
+    await _save_operator_file()
+
+async def _validate_operators() -> None:
+    # Read the operators config file. If not, create one
+    global operators
+    if operators:
+        return
+    if not os.path.exists(operators_store_filename):
+        await _create_empty_operator_file()
+    else:
+        async with aiofiles.open(operators_store_filename, "r", encoding="utf-8") as f:
+            temp_str: str = await f.read()
+            try:
+                operators = Operators.parse_raw(temp_str)
+            except pydantic.ValidationError:
+                await _create_empty_operator_file()
+
 async def operator_check(ctx: interactions.BaseContext) -> bool:
     """
     Permission check for operators. It includes the elevated roles
     """
+    await _validate_operators()
     res: bool = await my_check(ctx)
     r: bool = any(map(ctx.author.has_role, operators.operator_roles)) if len(operators.operator_roles) > 0 else False
     u: bool = any(map(ctx.author.id.__eq__, operators.operator_users)) if len(operators.operator_users) > 0 else False
@@ -106,32 +133,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
     )
     cmd_guild_deleteAllUrMsg_members: list[int] = []
 
-    def __init__(self, bot):
-        asyncio.create_task(self.__async_init__())
-
-    async def __async_init__(self) -> None:
-        # Read the operators config file. If not, create one
-        global operators
-        if not os.path.exists(self.operators_store_filename):
-            await self._create_empty_operator_file()
-        else:
-            async with aiofiles.open(self.operators_store_filename, "r", encoding="utf-8") as f:
-                temp_str: str = await f.read()
-                try:
-                    operators = Operators.parse_raw(temp_str)
-                except pydantic.ValidationError:
-                    await self._create_empty_operator_file()
-
-    async def _save_operator_file(self) -> None:
-        async with aiofiles.open(self.operators_store_filename, "w", encoding="utf-8") as f:
-            await f.write(operators.json())
-
-    async def _create_empty_operator_file(self) -> None:
-        global operators
-        operators = Operators(operator_users = list(), operator_roles = list())
-        await self._save_operator_file()
-
     async def _update_operators(self, *, operator_uid: Optional[int] = None, operator_rid: Optional[int] = None) -> tuple[bool, bool]:
+        await _validate_operators()
         ret_uid: bool = False
         ret_rid: bool = False
 
@@ -151,11 +154,12 @@ class Retr0initDiscordUtilities(interactions.Extension):
             operators.operator_roles.append(operator_rid)
             ret_rid = True
 
-        await self._save_operator_file()
+        await _save_operator_file()
 
         return ret_uid, ret_rid
 
     async def _remove_operators(self, *, operator_uid: Optional[int] = None, operator_rid: Optional[int] = None) -> tuple[bool, bool]:
+        await _validate_operators()
         ret_uid: bool = False
         ret_rid: bool = False
 
@@ -175,18 +179,14 @@ class Retr0initDiscordUtilities(interactions.Extension):
             operators.operator_roles.remove(operator_rid)
             ret_rid = True
 
-        await self._save_operator_file()
+        await _save_operator_file()
 
         return ret_uid, ret_rid
-
-    @property
-    def operators_store_filename(self) -> str:
-        """The filename of the operator ID storage"""
-        return f"{os.path.dirname(__file__)}/operators.json"
 
     @module_base.subcommand("operator_show", sub_cmd_description="Show Elevation settings")
     async def cmd_operatorShow(self, ctx: interactions.SlashContext):
         await ctx.defer()
+        await _validate_operators()
         display_str: str = "There is no current operator elevation setting." if len(operators.operator_roles) == 0 and len(operators.operator_users) == 0 else ""
         if len(operators.operator_roles) > 0:
             display_str += "### Operator Roles\n"
@@ -226,9 +226,10 @@ class Retr0initDiscordUtilities(interactions.Extension):
     @module_base.subcommand("operator_clear", sub_cmd_description="Clear all operator elevations")
     @interactions.check(interactions.is_owner())
     async def operatorClear(self, ctx: interactions.SlashContext):
+        await _validate_operators()
         operators.operator_users.clear()
         operators.operator_roles.clear()
-        await self._save_operator_file()
+        await _save_operator_file()
         await ctx.send("All operator elevations have been removed!")
 
     @module_base.subcommand("elevate_show", sub_cmd_description="Show Elevation settings")
