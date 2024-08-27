@@ -38,3 +38,6 @@
 # 20240826
 - Open access of `delete_user_messages` to everyone
 - Temporarily limit the access of the broken `delete_all_ur_msg` command
+
+# 20240827
+- Reduce import module code duplication

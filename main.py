@@ -34,17 +34,26 @@ from types import ModuleType
 logger = logutil.init_logger("Discord-Utilities")
 
 libmigrate_loaded: bool = False
-try:
-    url, modname, validated = giturl_parse("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
-    if validated:
-        libmigrate: ModuleType = import_module(f"...{modname}.lib", package=__name__)
-        libmigrate_loaded = True
-    # 等价于：
-    # from .. import github_d_com__retr0_h_init_s_libdiscord_h_ipy_h_migrate.lib as libmigrate
-except ImportError:
-    logger.error(f"Module Library {modname} import error or is not loaded!")
-# Use the following method to import the internal module in the current same directory
-# from . import internal_t
+libmigrate: ModuleType = None
+
+def __import_git_module(url: str) -> tuple[Optional[ModuleType], bool]:
+    ret_module: ModuleType = None
+    ret_loaded: bool = False
+    try:
+        url, modname, validated = giturl_parse(url)
+        if validated:
+            ret_module = import_module(f"...{modname}.lib", package=__name__)
+            # 等价于：
+            # from .. import github_d_com__retr0_h_init_s_libdiscord_h_ipy_h_migrate.lib as libmigrate
+            ret_loaded = True
+    except ImportError:
+        logger.error(f"Module Library {modname} import error or is not loaded!")
+        return None, False
+    else:
+        return ret_module, ret_loaded
+
+libmigrate, libmigrate_loaded = __import_git_module("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
+
 elevation_roles: list[int] = []
 elevation_members: list[int] = []
 '''
@@ -446,15 +455,8 @@ class Retr0initDiscordUtilities(interactions.Extension):
         global libmigrate
         global libmigrate_loaded
         if not libmigrate_loaded:
-            try:
-                url, modname, validated = giturl_parse("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
-                if validated:
-                    libmigrate = import_module(f"...{modname}.lib", package=__name__)
-                    libmigrate_loaded = True
-                # 等价于：
-                # from .. import github_d_com__retr0_h_init_s_libdiscord_h_ipy_h_migrate.lib as libmigrate
-            except ImportError:
-                logger.error(f"Module Library {modname} import error or is not loaded!")
+            libmigrate, libmigrate_loaded = __import_git_module("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
+            if not libmigrate_loaded:
                 await ctx.send(
                     "Required library https://github.com/retr0-init/libdiscord-ipy-migrate.git not loaded. Please contact the admin to load it!",
                     ephemeral=True,
