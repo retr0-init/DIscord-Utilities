@@ -22,6 +22,7 @@ from interactions.ext.paginators import Paginator
 import datetime
 import aiofiles
 import aiofiles.os
+import os
 from typing import Optional, cast
 import asyncio
 import traceback
@@ -30,6 +31,8 @@ from src import logutil
 from src.moduleutil import giturl_parse
 from importlib import import_module
 from types import ModuleType
+
+from pydantic import BaseModel
 
 logger = logutil.init_logger("Discord-Utilities")
 
@@ -54,8 +57,33 @@ def __import_git_module(url: str) -> tuple[Optional[ModuleType], bool]:
 
 libmigrate, libmigrate_loaded = __import_git_module("https://github.com/retr0-init/libdiscord-ipy-migrate.git")
 
+class Operators(BaseModel):
+    operator_users: list[int]
+    operator_roles: list[int]
+
 elevation_roles: list[int] = []
 elevation_members: list[int] = []
+operators: Operators = None
+
+async def my_check(ctx: interactions.BaseContext) -> bool:
+    '''
+    Check the permission to run the privileged command
+    The ROLE_ID needs to be set with the elevate command
+    '''
+    res: bool = await interactions.is_owner()(ctx)
+    r: bool = any(map(ctx.author.has_role, elevation_roles)) if len(elevation_roles) > 0 else False
+    u: bool = any(map(ctx.author.id.__eq__, elevation_members)) if len(elevation_members) > 0 else False
+    return res or r or u
+
+async def operator_check(ctx: interactions.BaseContext) -> bool:
+    """
+    Permission check for operators. It includes the elevated roles
+    """
+    res: bool = await my_check(ctx)
+    r: bool = any(map(ctx.author.has_role, operators.operator_roles)) if len(operators.operator_roles) > 0 else False
+    u: bool = any(map(ctx.author.id.__eq__, operators.operator_users)) if len(operators.operator_users) > 0 else False
+    return res or r or u
+
 '''
 Useful utilities
 '''
@@ -78,15 +106,130 @@ class Retr0initDiscordUtilities(interactions.Extension):
     )
     cmd_guild_deleteAllUrMsg_members: list[int] = []
 
-    '''
-    Check the permission to run the privileged command
-    The ROLE_ID needs to be set with the elevate command
-    '''
-    async def my_check(ctx: interactions.BaseContext):
-        res: bool = await interactions.is_owner()(ctx)
-        r: bool = any(map(ctx.author.has_role, elevation_roles)) if len(elevation_roles) > 0 else False
-        u: bool = any(map(ctx.author.id.__eq__, elevation_members)) if len(elevation_members) > 0 else False
-        return res or r or u
+    def __init__(self, bot):
+        asyncio.create_task(self.__async_init__())
+
+    async def __async_init__(self) -> None:
+        # Read the operators config file. If not, create one
+        global operators
+        if not os.path.exists(self.operators_store_filename):
+            await self._create_empty_operator_file()
+        else:
+            async with aiofiles.open(self.operators_store_filename, "r", encoding="utf-8") as f:
+                temp_str: str = await f.read()
+                try:
+                    operators = Operators.parse_raw(temp_str)
+                except pydantic.ValidationError:
+                    await self._create_empty_operator_file()
+
+    async def _save_operator_file(self) -> None:
+        async with aiofiles.open(self.operators_store_filename, "w", encoding="utf-8") as f:
+            await f.write(operators.json())
+
+    async def _create_empty_operator_file(self) -> None:
+        global operators
+        operators = Operators(operator_users = list(), operator_roles = list())
+        await self._save_operator_file()
+
+    async def _update_operators(self, *, operator_uid: Optional[int] = None, operator_rid: Optional[int] = None) -> tuple[bool, bool]:
+        ret_uid: bool = False
+        ret_rid: bool = False
+
+        if operator_uid is None and operator_rid is None:
+            return False, False
+        if operator_rid is None and operator_uid and operator_uid in operators.operator_users:
+            return False, False
+        if operator_uid is None and operator_rid and operator_rid in operators.operator_roles:
+            return False, False
+        if operator_rid in operators.operator_roles and operator_uid in operators.operator_users:
+            return False, False
+
+        if operator_uid and operator_uid not in operators.operator_users:
+            operators.operator_users.append(operator_uid)
+            ret_uid = True
+        if operator_rid and operator_rid not in operators.operator_roles:
+            operators.operator_roles.append(operator_rid)
+            ret_rid = True
+
+        await self._save_operator_file()
+
+        return ret_uid, ret_rid
+
+    async def _remove_operators(self, *, operator_uid: Optional[int] = None, operator_rid: Optional[int] = None) -> tuple[bool, bool]:
+        ret_uid: bool = False
+        ret_rid: bool = False
+
+        if operator_uid is None and operator_rid is None:
+            return False, False
+        if operator_rid is None and operator_uid and operator_uid not in operators.operator_users:
+            return False, False
+        if operator_uid is None and operator_rid and operator_rid not in operators.operator_roles:
+            return False, False
+        if operator_rid in operators.operator_roles and operator_uid not in operators.operator_users:
+            return False, False
+
+        if operator_uid and operator_uid in operators.operator_users:
+            operators.operator_users.remove(operator_uid)
+            ret_uid = True
+        if operator_rid and operator_rid in operators.operator_roles:
+            operators.operator_roles.remove(operator_rid)
+            ret_rid = True
+
+        await self._save_operator_file()
+
+        return ret_uid, ret_rid
+
+    @property
+    def operators_store_filename(self) -> str:
+        """The filename of the operator ID storage"""
+        return f"{os.path.dirname(__file__)}/operators.json"
+
+    @module_base.subcommand("operator_show", sub_cmd_description="Show Elevation settings")
+    async def cmd_operatorShow(self, ctx: interactions.SlashContext):
+        await ctx.defer()
+        display_str: str = "There is no current operator elevation setting." if len(operators.operator_roles) == 0 and len(operators.operator_users) == 0 else ""
+        if len(operators.operator_roles) > 0:
+            display_str += "### Operator Roles\n"
+            for r in operators.operator_roles:
+                display_str += f"- {ctx.guild.get_role(r).name}\n"
+        if len(operators.operator_users) > 0:
+            display_str += "### Operator Members\n"
+            for u in operators.operator_users:
+                display_str += f"- {ctx.guild.get_member(u)}\n"
+        pag: Paginator = Paginator.create_from_string(self.bot, display_str)
+        await pag.send(ctx)
+
+    @module_base.subcommand("operator_role", sub_cmd_description="Elevate certain role to run operator commands")
+    @interactions.check(interactions.is_owner())
+    @interactions.slash_option(
+        name = "role",
+        description = "Role to be elevated",
+        required = True,
+        opt_type = interactions.OptionType.ROLE
+    )
+    async def cmd_operatorRole(self, ctx: interactions.SlashContext, role: interactions.Role):
+        await self._update_operators(operator_rid=role.id)
+        await ctx.send(f"Role {role.name} has been elevated for operator utility commands!")
+
+    @module_base.subcommand("operator_member", sub_cmd_description="Elevate certain member to run operator commands")
+    @interactions.check(interactions.is_owner())
+    @interactions.slash_option(
+        name = "member",
+        description = "Member to be elevated",
+        required = True,
+        opt_type = interactions.OptionType.USER
+    )
+    async def cmd_elevateMember(self, ctx: interactions.SlashContext, member: interactions.User):
+        await self._update_operators(operator_uid=member.id)
+        await ctx.send(f"Member {member.display_name}({member.username}) has been elevated for operator utility commands!")
+    
+    @module_base.subcommand("operator_clear", sub_cmd_description="Clear all operator elevations")
+    @interactions.check(interactions.is_owner())
+    async def operatorClear(self, ctx: interactions.SlashContext):
+        operators.operator_users.clear()
+        operators.operator_roles.clear()
+        await self._save_operator_file()
+        await ctx.send("All operator elevations have been removed!")
 
     @module_base.subcommand("elevate_show", sub_cmd_description="Show Elevation settings")
     async def cmd_elevateShow(self, ctx: interactions.SlashContext):
@@ -136,8 +279,9 @@ class Retr0initDiscordUtilities(interactions.Extension):
         elevation_roles.clear()
         await ctx.send("All privilege elevations have been removed!")
 
-    @module_group.subcommand("members_older_than", sub_cmd_description="(Privileged) Get the list of members whose join date is longer than...")
-    @interactions.check(my_check)
+    @module_group.subcommand("members_older_than", sub_cmd_description="(Operator) Get the list of members whose join date is longer than...")
+    @interactions.max_concurrency(interactions.Buckets.GUILD, 2)
+    @interactions.check(operator_check)
     @interactions.slash_option(
         name = "weeks",
         description = "Joined longer than...",
@@ -436,9 +580,9 @@ class Retr0initDiscordUtilities(interactions.Extension):
             await dm_msg.edit(components=button)
 
     @module_group_c.subcommand(
-        "migrate", sub_cmd_description="Migrate messages from one channel to the other one"
+        "migrate", sub_cmd_description="(Operator) Migrate channel"
     )
-    @interactions.check(my_check)
+    @interactions.check(operator_check)
     @interactions.slash_option(
         "origin",
         "The origin channel to migrate from",
@@ -513,7 +657,7 @@ class Retr0initDiscordUtilities(interactions.Extension):
         await ctx.send("Something went wrong. Please contact the admin!", ephemeral=True)
 
     @module_group_u.subcommand(
-        "remove_all_roles", sub_cmd_description="Remove all of the roles from a user"
+        "remove_all_roles", sub_cmd_description="(Privileged) Remove all of the roles from a user"
     )
     @interactions.check(my_check)
     @interactions.slash_option(
